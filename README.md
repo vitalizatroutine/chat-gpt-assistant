@@ -1,46 +1,33 @@
-# Getting Started with Create React App
+# Voice Assistant
+This project is a React-based web application that allows users to convert their speech into text and interact with the ChatGPT model. It has a Paste Bucket feature where users can paste additional text, which will be combined with the transcribed speech. The app also includes a Transcript Area where the final output is displayed and can be read aloud using the browser's Text-to-Speech feature. The user can launch the ChatGPT model in a separate window to interact with it directly.
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Features
+- Speech-to-text functionality
+- Paste Bucket for adding additional text
+- Transcript Area with text-to-speech
+- Launch ChatGPT in a new window
+- Components
+- PasteBucket
+- TranscriptArea
+- SpeechManager
+- SpeechToTextButton
 
-## Available Scripts
+## Installation
+1. Clone the repository.
+2. Install the required dependencies using `npm install` or `yarn`.
+3. Start the development server using `npm start` or `yarn start`.
 
-In the project directory, you can run:
+## Usage
+1. Hold the "Hold to record" button to record your speech.
+2. Release the button to stop recording.
+3. Your speech will be transcribed and displayed in the Transcript Area.
+4. Add any additional text to the Paste Bucket.
+5. Transcript Area will combine the transcribed speech and Paste Bucket content.
+6. The app will read the transcript aloud using the browser's Text-to-Speech feature.
+7. Click "Launch ChatGPT" to open a new window and interact with the ChatGPT model directly.
 
-### `npm start`
+## Testing
+The project contains tests using the React Testing Library. Run the tests using `npm test` or `yarn test`.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-### `npm test`
-
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
-
-### `npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+## License
+This project is open source and available under the MIT License.

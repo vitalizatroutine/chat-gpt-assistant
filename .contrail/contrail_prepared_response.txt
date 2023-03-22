@@ -1,0 +1,524 @@
+Take a look at this project. Generate a README.md that describes what this project does.
+
+Here is the project content for context:
+
+File Path: src\components\index.ts
+
+1: import PasteBucket from "./pasteBucket/pasteBucket.component";
+2: import TranscriptArea from "./transcriptArea/transcriptArea.component";
+3: import SpeechManager from "./speechManager/speechManager.component";
+4: import SpeechToTextButton from "./speechToTextButton/speechToTextButton.component";
+5: 
+6: export { PasteBucket, TranscriptArea, SpeechManager, SpeechToTextButton };
+7: 
+8: 
+
+File Path: src\components\pasteBucket\pasteBucket.component.tsx
+
+1: import React from "react";
+2: import { Box, Textarea, VStack } from "@chakra-ui/react";
+3: 
+4: interface PasteBucketProps {
+5:   binValue: string;
+6:   onBinChange: (value: string) => void;
+7: }
+8: 
+9: const PasteBucket: React.FC<PasteBucketProps> = ({ binValue, onBinChange }) => {
+10:   return (
+11:     <Box flexGrow={1} w="100%">
+12:       <VStack h="100%">
+13:         <Box
+14:           color="white"
+15:           fontSize="md"
+16:           fontWeight="bold"
+17:           mb={1}
+18:           alignSelf="flex-start"
+19:         >
+20:           The Paste Bucket
+21:         </Box>
+22:         <Textarea
+23:           value={binValue}
+24:           onChange={(e) => onBinChange(e.target.value)}
+25:           backgroundColor="#1b2027"
+26:           color="white"
+27:           fontSize="lg"
+28:           borderRadius="8px"
+29:           flexGrow={1}
+30:           w="100%"
+31:           p={4}
+32:           _hover={{
+33:             borderColor: "#222831",
+34:           }}
+35:           _focus={{
+36:             borderColor: "#222831",
+37:           }}
+38:         />
+39:       </VStack>
+40:     </Box>
+41:   );
+42: };
+43: 
+44: export default PasteBucket;
+45: 
+
+File Path: src\components\speechManager\speechManager.component.tsx
+
+1: import { VStack } from "@chakra-ui/react";
+2: import React, { useState } from "react";
+3: import { PasteBucket, SpeechToTextButton } from "../index";
+4: 
+5: interface SpeechManagerProps {
+6:   onSpeech: (value: string) => void;
+7: }
+8: 
+9: const SpeechManager: React.FC<SpeechManagerProps> = ({ onSpeech }) => {
+10:   const [binValue, setBinValue] = useState("");
+11: 
+12:   const handleTextGenerated = (value: string) => {
+13:     if (binValue) {
+14:       onSpeech(`${value}\n\nThis is the paste bucket content:\n\n${binValue}`);
+15:     } else {
+16:       onSpeech(value);
+17:     }
+18:   };
+19: 
+20:   return (
+21:     <VStack h="100%">
+22:       <PasteBucket binValue={binValue} onBinChange={setBinValue} />
+23:       <SpeechToTextButton onTextGenerated={handleTextGenerated} />
+24:     </VStack>
+25:   );
+26: };
+27: 
+28: export default SpeechManager;
+29: 
+
+File Path: src\components\speechToTextButton\speechToTextButton.component.tsx
+
+1: import { Button } from "@chakra-ui/react";
+2: import React, { useEffect, useRef, useState } from "react";
+3: import { assistantService } from "../../services";
+4: 
+5: interface SpeechToTextButtonProps {
+6:   onTextGenerated: (value: string) => void;
+7: }
+8: 
+9: const SpeechToTextButton: React.FC<SpeechToTextButtonProps> = ({
+10:   onTextGenerated,
+11: }) => {
+12:   const [isRecording, setIsRecording] = useState(false);
+13:   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+14:   const audioChunksRef = useRef<Blob[]>([]);
+15: 
+16:   const startRecording = async () => {
+17:     try {
+18:       const mediaStream = await navigator.mediaDevices.getUserMedia({
+19:         audio: true,
+20:         video: false,
+21:       });
+22: 
+23:       mediaRecorderRef.current = new MediaRecorder(mediaStream);
+24:       mediaRecorderRef.current.addEventListener("dataavailable", (event) => {
+25:         audioChunksRef.current.push(event.data);
+26:       });
+27: 
+28:       mediaRecorderRef.current.addEventListener("stop", async () => {
+29:         const audioBlob = new Blob(audioChunksRef.current, {
+30:           type: "audio/webm",
+31:         });
+32:         const response = await sendAudioToSpeechToText(audioBlob);
+33:         onTextGenerated(response);
+34:         audioChunksRef.current = [];
+35:       });
+36: 
+37:       mediaRecorderRef.current.start();
+38:     } catch (error) {
+39:       console.error("Error accessing the microphone:", error);
+40:       alert(
+41:         "Error accessing the microphone. Please check your device and permissions."
+42:       );
+43:     }
+44:   };
+45: 
+46:   const stopRecording = () => {
+47:     if (mediaRecorderRef.current) {
+48:       mediaRecorderRef.current.stop();
+49:     }
+50:   };
+51: 
+52:   const sendAudioToSpeechToText = async (audioBlob: Blob) => {
+53:     return await assistantService.transcribeAudio(audioBlob);
+54:   };
+55: 
+56:   useEffect(() => {
+57:     return () => {
+58:       stopRecording();
+59:     };
+60:   }, []);
+61: 
+62:   const handleMouseDown = () => {
+63:     setIsRecording(true);
+64:     startRecording();
+65:   };
+66: 
+67:   const handleMouseUp = () => {
+68:     setIsRecording(false);
+69:     stopRecording();
+70:   };
+71: 
+72:   return (
+73:     <Button
+74:       alignSelf="flex-end"
+75:       mt={2}
+76:       onMouseDown={handleMouseDown}
+77:       onMouseUp={handleMouseUp}
+78:     >
+79:       {isRecording ? "Recording..." : "Hold to record"}
+80:     </Button>
+81:   );
+82: };
+83: 
+84: export default SpeechToTextButton;
+85: 
+
+File Path: src\components\transcriptArea\transcriptArea.component.tsx
+
+1: import React, { memo, useEffect, useState } from "react";
+2: import { Box, Button, Textarea, VStack } from "@chakra-ui/react";
+3: 
+4: interface TranscriptAreaProps {
+5:   value: string;
+6: }
+7: 
+8: const TranscriptArea: React.FC<TranscriptAreaProps> = ({ value }) => {
+9:   const [previousValue, setPreviousValue] = useState("");
+10: 
+11:   const getSelectedVoice = () => {
+12:     const availableVoices = window.speechSynthesis.getVoices();
+13:     const selectedVoiceName = "Google UK English Female";
+14: 
+15:     const selectedVoice = availableVoices.find(
+16:       (voice) => voice.name === selectedVoiceName
+17:     );
+18:     return selectedVoice || availableVoices[0];
+19:   };
+20: 
+21:   useEffect(() => {
+22:     if (value === previousValue) return;
+23: 
+24:     const utterance = new SpeechSynthesisUtterance(value);
+25:     utterance.voice = getSelectedVoice();
+26:     window.speechSynthesis.speak(utterance);
+27: 
+28:     setPreviousValue(value);
+29:   }, [value, previousValue]);
+30: 
+31:   return (
+32:     <VStack h="100%">
+33:       <Box
+34:         color="white"
+35:         fontSize="md"
+36:         fontWeight="bold"
+37:         mb={1}
+38:         alignSelf="flex-start"
+39:       >
+40:         The Transcript
+41:       </Box>
+42:       <Textarea
+43:         readOnly
+44:         value={value}
+45:         backgroundColor="#1b2027"
+46:         color="white"
+47:         fontSize="lg"
+48:         borderRadius="8px"
+49:         flexGrow={1}
+50:         w="100%"
+51:         p={4}
+52:         _hover={{
+53:           borderColor: "#222831",
+54:         }}
+55:         _focus={{
+56:           borderColor: "#222831",
+57:         }}
+58:       />
+59:       <Button
+60:         onClick={() =>
+61:           window.open("https://chat.openai.com/chat?model=gpt-4", "_blank")
+62:         }
+63:         alignSelf="flex-end"
+64:         mt={2}
+65:       >
+66:         Launch ChatGPT
+67:       </Button>
+68:     </VStack>
+69:   );
+70: };
+71: 
+72: export default memo(TranscriptArea);
+73: 
+
+File Path: src\components\transcriptArea\transcriptArea.test.tsx
+
+1: import React from "react";
+2: import { render, screen } from "@testing-library/react";
+3: import userEvent from "@testing-library/user-event";
+4: import TranscriptArea from "./transcriptArea.component";
+5: 
+6: describe("TranscriptArea", () => {
+7:   it("renders the provided value in the textarea", () => {
+8:     const testValue = "Test transcript content";
+9:     render(<TranscriptArea value={testValue} />);
+10:     expect(screen.getByDisplayValue(testValue)).toBeInTheDocument();
+11:   });
+12: 
+13:   it("contains a title that says 'The Transcript'", () => {
+14:     render(<TranscriptArea value="" />);
+15:     const title = screen.getByText(/the transcript/i);
+16:     expect(title).toBeInTheDocument();
+17:   });
+18: 
+19:   it("contains a button to launch ChatGPT", () => {
+20:     render(<TranscriptArea value="" />);
+21:     const button = screen.getByRole("button", { name: /launch chatgpt/i });
+22:     expect(button).toBeInTheDocument();
+23:   });
+24: 
+25:   it("opens the ChatGPT URL in a new tab when the button is clicked", () => {
+26:     const openSpy = jest.spyOn(window, "open").mockImplementation(() => null);
+27: 
+28:     render(<TranscriptArea value="" />);
+29:     const button = screen.getByRole("button", { name: /launch chatgpt/i });
+30: 
+31:     userEvent.click(button);
+32:     expect(openSpy).toHaveBeenCalledWith(
+33:       "https://chat.openai.com/chat?model=gpt-4",
+34:       "_blank"
+35:     );
+36: 
+37:     openSpy.mockRestore();
+38:   });
+39: });
+40: 
+
+File Path: src\index.tsx
+
+1: import React from "react";
+2: import ReactDOM from "react-dom/client";
+3: import RootView from "./views/root/root.view";
+4: import reportWebVitals from "./reportWebVitals";
+5: 
+6: const root = ReactDOM.createRoot(
+7:   document.getElementById("root") as HTMLElement
+8: );
+9: 
+10: root.render(
+11:   <React.StrictMode>
+12:     <RootView />
+13:   </React.StrictMode>
+14: );
+15: 
+16: // If you want to start measuring performance in your app, pass a function
+17: // to log results (for example: reportWebVitals(console.log))
+18: // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+19: reportWebVitals();
+20: 
+
+File Path: src\react-app-env.d.ts
+
+1: /// <reference types="react-scripts" />
+2: 
+
+File Path: src\reportWebVitals.ts
+
+1: import { ReportHandler } from 'web-vitals';
+2: 
+3: const reportWebVitals = (onPerfEntry?: ReportHandler) => {
+4:   if (onPerfEntry && onPerfEntry instanceof Function) {
+5:     import('web-vitals').then(({ getCLS, getFID, getFCP, getLCP, getTTFB }) => {
+6:       getCLS(onPerfEntry);
+7:       getFID(onPerfEntry);
+8:       getFCP(onPerfEntry);
+9:       getLCP(onPerfEntry);
+10:       getTTFB(onPerfEntry);
+11:     });
+12:   }
+13: };
+14: 
+15: export default reportWebVitals;
+16: 
+
+File Path: src\services\assistant\assistant.service.ts
+
+1: export interface IAssistantService {
+2:   transcribeAudio(audioBlob: Blob): Promise<string>;
+3:   pingAssistant(message: string): Promise<string>;
+4: }
+5: 
+6: class AssistantService implements IAssistantService {
+7:   private readonly baseUrl = "http://localhost:5001";
+8: 
+9:   async transcribeAudio(audioBlob: Blob): Promise<string> {
+10:     try {
+11:       const formData = new FormData();
+12:       formData.append("audio", audioBlob);
+13: 
+14:       const response = await fetch(`${this.baseUrl}/transcribe`, {
+15:         method: "POST",
+16:         body: formData,
+17:       });
+18: 
+19:       if (response.ok) {
+20:         const data = await response.json();
+21: 
+22:         return data.text || "";
+23:       } else {
+24:         throw new Error(`Server error: ${response.statusText}`);
+25:       }
+26:     } catch (error) {
+27:       console.error("Error sending audio to server:", error);
+28:       return "";
+29:     }
+30:   }
+31: 
+32:   async pingAssistant(message: string): Promise<string> {
+33:     try {
+34:       const response = await fetch("http://localhost:5001/ping-assistant", {
+35:         method: "POST",
+36:         headers: {
+37:           "Content-Type": "application/json",
+38:         },
+39:         body: JSON.stringify({ message }),
+40:       });
+41: 
+42:       if (response.ok) {
+43:         const data = await response.json();
+44:         return data.reply || "";
+45:       } else {
+46:         throw new Error(`Server error: ${response.statusText}`);
+47:       }
+48:     } catch (error) {
+49:       console.error("Error sending message to assistant:", error);
+50:       return "";
+51:     }
+52:   }
+53: }
+54: 
+55: export const assistantService: IAssistantService = new AssistantService();
+56: 
+
+File Path: src\services\index.ts
+
+1: export { assistantService } from "./assistant/assistant.service";
+2: 
+
+File Path: src\setupTests.ts
+
+1: // jest-dom adds custom jest matchers for asserting on DOM nodes.
+2: // allows you to do things like:
+3: // expect(element).toHaveTextContent(/react/i)
+4: // learn more: https://github.com/testing-library/jest-dom
+5: import '@testing-library/jest-dom';
+6: 
+
+File Path: src\views\assistant\assistant.view.tsx
+
+1: import React, { useState } from "react";
+2: import { Box, Container, Flex, Heading, VStack } from "@chakra-ui/react";
+3: import { SpeechManager, TranscriptArea } from "../../components";
+4: import { assistantService } from "../../services";
+5: 
+6: function Assistant() {
+7:   const [transcript, setTranscript] = useState(
+8:     "Hello, I am your awesome voice assistant. How can I help today?"
+9:   );
+10: 
+11:   const handleOnSpeech = async (value: string) => {
+12:     console.log("Speech History", value);
+13: 
+14:     const assistantReply = await assistantService.pingAssistant(value);
+15: 
+16:     if (assistantReply) {
+17:       setTranscript(assistantReply);
+18:     } else {
+19:       setTranscript("Sorry, I couldn't understand your request.");
+20:     }
+21:   };
+22: 
+23:   return (
+24:     <VStack h="100vh" w="100%" spacing={0}>
+25:       <Box w="100%">
+26:         <Container maxW="none">
+27:           <Heading as="h1" color="white" fontSize="2xl" py={4}>
+28:             Voice Assistant
+29:           </Heading>
+30:         </Container>
+31:       </Box>
+32:       <Flex
+33:         w="100%"
+34:         flexGrow={1}
+35:         direction={["column", "row"]}
+36:         alignItems="stretch"
+37:       >
+38:         <Container maxW="none" w="100%" padding="16px">
+39:           <Flex
+40:             w="100%"
+41:             h="100%"
+42:             direction={["column", "row"]}
+43:             alignItems="stretch"
+44:           >
+45:             <Box flex={1} pr={[0, 2]} pb={[2, 0]}>
+46:               <SpeechManager onSpeech={handleOnSpeech} />
+47:             </Box>
+48:             <Box flex={1} pl={[0, 2]} pt={[2, 0]}>
+49:               <TranscriptArea value={transcript} />
+50:             </Box>
+51:           </Flex>
+52:         </Container>
+53:       </Flex>
+54:     </VStack>
+55:   );
+56: }
+57: 
+58: export default Assistant;
+59: 
+
+File Path: src\views\index.ts
+
+1: import RootView from "./root/root.view";
+2: 
+3: export { RootView };
+4: 
+
+File Path: src\views\root\root.style.ts
+
+1: import { extendTheme } from "@chakra-ui/react";
+2: 
+3: export const rootTheme = extendTheme({
+4:   styles: {
+5:     global: {
+6:       body: {
+7:         backgroundColor: "#222831",
+8:       },
+9:     },
+10:   },
+11: });
+12: 
+
+File Path: src\views\root\root.view.tsx
+
+1: import React from "react";
+2: import { ChakraProvider } from "@chakra-ui/react";
+3: import { rootTheme } from "./root.style";
+4: import Assistant from "../assistant/assistant.view";
+5: 
+6: function RootView() {
+7:   return (
+8:     <ChakraProvider theme={rootTheme}>
+9:       <Assistant />
+10:     </ChakraProvider>
+11:   );
+12: }
+13: 
+14: export default RootView;
+15: 
+
